@@ -1,0 +1,11 @@
+# 環境ファイル
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 画像
+images/
