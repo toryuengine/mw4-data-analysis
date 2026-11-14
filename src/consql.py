@@ -31,7 +31,7 @@ weapons = cursor.fetchall()
 
 #レンジテーブルの実行
 cursor.execute(sql3)
-range_table = cursor.fetchall()
+range_table = list(cursor.fetchall())
 print("レンジテーブル", range_table)
 
 #ダメージテーブル
@@ -49,20 +49,33 @@ for m in range(1, 60):
         #ads速度,連射速度,マズル速度,ダメージ
         ads, rpm, mv = weapons[r]
 
-        #damegeテーブルを設定する
+        # Noneであれば0に置き換える
         range1, range2, range3 = range_table[r]
+        if range1 == None:
+            range1 = 0
 
+        if range2 == None:
+            range2 = 0
+
+        if range3 == None:
+            range3 = 0
+        
+        
+        # print("rennzi", range1, range2, range3)
         match m:
-            case m if m>range1:
-                dmg = damage_table[r][1]
+            case m if 0 > m and m > range1:
+                dmg = int(damage_table[r][0])
+                print("ダメージテーブル1")
 
-            case m if m>range2:
-                dmg = damage_table[r][2]
+            case m if m < range1 :
+                dmg = int(damage_table[r][1])
+                print("ダメージテーブル2")
 
-            case m if m>range3:
-                dmg = damage_table[r][2]
+            case m if m < range3:
+                dmg = int(damage_table[r][2])
+                print("ダメージテーブル3")
 
-            case :
+            case _:
                 print("ダメージテーブルを見つけることができなかった")
         #5mの位置に到達する時間
         ms = m / mv
@@ -80,4 +93,4 @@ for m in range(1, 60):
             time = (ms + rpms) + time
             HP = HP - dmg
 
-        # print(time/1000) #キルタイム
+        print(time/1000) #キルタイム
