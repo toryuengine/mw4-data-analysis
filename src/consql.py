@@ -1,40 +1,69 @@
-import os
-
 import mysql.connector
-from dotenv import load_dotenv
-
-load_dotenv()
 from decimal import Decimal
 
 conn = mysql.connector.connect(
-    host = os.getenv("DB_HOST"),
-    user = os.getenv("DB_USER"),
-    password = os.getenv("DB_PASSWORD"),
-    database = os.getenv("DB_NAME")
+    host = "localhost",
+    user = "root",
+    password = "root",
+    database = "mw4"
 )
 
 #全検索
 sql_1 = """SELECT * FROM mw4.weapon;"""
 
 #超接近キルタイム
-sql_2 = """SELECT ads_in_time, rpm, muzzle_velocity, range1_damage FROM mw4.weapon;"""
-rangetable = """"""
+sql_2 = """SELECT ads_in_time, rpm, muzzle_velocity FROM mw4.weapon;"""
 
-#ダメージテーブルに応じて、威力の変化を記述する
-sql3 = """SELECT ads_in_time, rpm, muzzle_velocity, """
+#レンジテーブル
+sql3 = """SELECT range1_max, range2_max, range3_max FROM mw4.weapon;"""
+
+#ダメージテーブル
+sql4 = """SELECT range1_damage, range2_damage, range3_damage FROM mw4.weapon;"""
+
+
+
 cursor = conn.cursor()
 
 
+
 cursor.execute(sql_2)
+weapons = cursor.fetchall()
 
-rows = cursor.fetchall()
+#レンジテーブルの実行
+cursor.execute(sql3)
+range_table = cursor.fetchall()
+print("レンジテーブル", range_table)
 
-for m in range(1, 30):
+#ダメージテーブル
+cursor.execute(sql4)
+damage_table = cursor.fetchall()
+print("ダメージテーブル", damage_table)
+
+
+print("配列の数", len(weapons))
+
+
+for m in range(1, 60):
     print(m, "メートル")
-    for row in rows:
+    for r in range(len(weapons)):
         #ads速度,連射速度,マズル速度,ダメージ
-        ads, rpm, mv, dmg = row
+        ads, rpm, mv = weapons[r]
 
+        #damegeテーブルを設定する
+        range1, range2, range3 = range_table[r]
+
+        match m:
+            case m if m>range1:
+                dmg = damage_table[r][1]
+
+            case m if m>range2:
+                dmg = damage_table[r][2]
+
+            case m if m>range3:
+                dmg = damage_table[r][2]
+
+            case :
+                print("ダメージテーブルを見つけることができなかった")
         #5mの位置に到達する時間
         ms = m / mv
         # print(ms)
@@ -51,4 +80,4 @@ for m in range(1, 30):
             time = (ms + rpms) + time
             HP = HP - dmg
 
-        print(time/1000) #キルタイム
+        # print(time/1000) #キルタイム
