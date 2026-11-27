@@ -1,3 +1,5 @@
+# mw4-data-analysis
+
 # テーブル構成
 
 データベース名：`mw4`（文字コード utf8mb4）
@@ -7,7 +9,7 @@
 | テーブル | 内容 | 件数 |
 |---|---|---|
 | category | 武器カテゴリー | 1 |
-| weapon | 武器本体のステータス | 8 |
+| weapon | 武器本体のステータス | 9 |
 | muzzle | アタッチメント：マズル | 8 |
 | barrel | アタッチメント：バレル | 6 |
 | laser | アタッチメント：レーザー | 7 |
@@ -238,6 +240,3 @@ from standard_score import standard_scores_by_key
 
 standard_scores_by_key({"A": 250, "B": 240, "C": 275}, higher_is_better=False)
 ```
-
-#   m w 4 - d a t a - a n a l y s i s  
- 
