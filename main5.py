@@ -50,15 +50,10 @@ def fmt_value(v):
     return f"{v:.0f}" if abs(v) >= 100 else f"{v:.2f}".rstrip("0").rstrip(".")
 
 
-if __name__ == "__main__":
-    weapon_id, max_count, fixed = parse_args(sys.argv[1:])
-    try:
-        result = rank_customs(weapon_id, max_count=max_count, fixed=fixed, stats=STATS, top=TOP)
-    except ValueError as e:
-        raise SystemExit(str(e))
-
+def print_result(result, max_count):
+    """rank_customs() の結果を表示する（main6.py からも使う）。"""
     weapon = result["weapon"]
-    print(f"武器: {weapon['name']}（id {weapon_id}）  最大セット数: {max_count}  "
+    print(f"武器: {weapon['name']}（id {weapon['id']}）  最大セット数: {max_count}  "
           f"組み合わせ数: {result['total']:,}")
     print("項目: " + " / ".join(label for _, label, _ in result["stats"]))
     print("偏差値はこの武器の全組み合わせの中で計算（50 が平均）")
@@ -72,3 +67,12 @@ if __name__ == "__main__":
             for col, label, _ in result["stats"] if r["scores"][col] is not None
         )
         print(f"      {detail}")
+
+
+if __name__ == "__main__":
+    weapon_id, max_count, fixed = parse_args(sys.argv[1:])
+    try:
+        result = rank_customs(weapon_id, max_count=max_count, fixed=fixed, stats=STATS, top=TOP)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    print_result(result, max_count)

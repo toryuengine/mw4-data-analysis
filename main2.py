@@ -13,7 +13,7 @@ import mysql.connector
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 from standard_score import standard_scores_by_key  # noqa: E402
 from db import DB_CONFIG  # noqa: E402,F401  main3 / main4 もここから使う
-from stat_catalog import STAT_CATALOG, DEFAULT_SELECTED  # noqa: E402
+from stat_catalog import STAT_CATALOG, DEFAULT_SELECTED, stat_value  # noqa: E402
 from stat_catalog import select_stats as _select_stats  # noqa: E402
 
 # 偏差値を出す項目の番号（src/stat_catalog.py の STAT_CATALOG の番号）
@@ -45,7 +45,7 @@ def calc_scores(weapons):
     """{カラム名: {武器名: 偏差値}} を返す。"""
     scores = {}
     for col, _, higher_is_better in STATS:
-        values = {w["name"]: w[col] for w in weapons}
+        values = {w["name"]: stat_value(w, col) for w in weapons}
         scores[col] = standard_scores_by_key(values, higher_is_better)
     return scores
 

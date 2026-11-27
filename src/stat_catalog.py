@@ -1,8 +1,16 @@
 """偏差値を出せるステータスの一覧（番号で選ぶ）。
 
 番号: (カラム名, 表示名, 大きいほど良いか)
-時間・反動・ブレ・揺れ・被弾時のひるみは小さいほど良いので False。
+時間・反動・ブレ・揺れ・被弾時のひるみ・キルタイムは小さいほど良いので False。
+
+44・45 のキルタイムは DB の列ではなく、killtime.py で計算する値（COMPUTED）。
+値を取り出すときは stat_value() を使う。
 """
+
+from killtime import kill_time
+
+# キルタイムを計算する距離(m)
+KILLTIME_DISTANCE = 10
 
 STAT_CATALOG = {
     # バー
@@ -56,9 +64,32 @@ STAT_CATALOG = {
     41: ("dmg_head",            "頭ダメージ",   True),
     42: ("range1_damage",       "近距離ダメ",   True),
     43: ("range1_max",          "近距離上限",   True),
+    # キルタイム（KILLTIME_DISTANCE m・全弾胴体。killtime.py で計算）
+    44: ("ttk",                 "キルタイム",   False),
+    45: ("ttk_sprint",          "TTK硬直込み",  False),
 }
 
 DEFAULT_SELECTED = [1, 2, 3, 4, 5, 6, 18, 21, 26]
+
+# DB の列ではなく計算で出す項目: カラム名 -> 武器の辞書から値を出す関数
+COMPUTED = {
+    "ttk":        lambda w: kill_time(w, KILLTIME_DISTANCE)["ttk"],
+    "ttk_sprint": lambda w: kill_time(w, KILLTIME_DISTANCE, include_sprint=True)["ttk"],
+}
+
+# キルタイムの計算に使う weapon の列（アタッチメントを付けた後の値を作るときに使う）
+TTK_COLUMNS = [
+    "rpm", "muzzle_velocity", "pre_fire_delay", "sprint_to_fire", "magazine_size",
+    "range1_max", "range1_damage", "range2_max", "range2_damage",
+    "range3_max", "range3_damage", "range4_max", "range4_damage",
+]
+
+
+def stat_value(weapon, column):
+    """武器の辞書から、その項目の値を返す（計算で出す項目にも対応）。"""
+    if column in COMPUTED:
+        return COMPUTED[column](weapon)
+    return weapon[column]
 
 
 def select_stats(numbers):

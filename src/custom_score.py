@@ -22,7 +22,7 @@ import os
 from brute_force import combinations, load_rules
 from db import ROOT, fetch_attachments, fetch_weapon
 from standard_score import standard_scores
-from stat_catalog import DEFAULT_SELECTED, select_stats
+from stat_catalog import COMPUTED, DEFAULT_SELECTED, TTK_COLUMNS, select_stats
 
 RULES_PATH = os.path.join(ROOT, "incompatible.json")
 DEFAULT_MAX_COUNT = 5
@@ -75,13 +75,25 @@ def rank_customs(weapon_id, max_count=DEFAULT_MAX_COUNT, fixed=None, stats=None,
 
     # 項目ごとに、全組み合わせの「付けた後の値」と偏差値を出す
     columns = [col for col, _, _ in stat_defs]
+
+    def applied(col, combo):
+        return apply_attachments(weapon[col], col, [attachments[s][i][col] for s, i in combo.items()])
+
+    # キルタイムなど計算で出す項目は、アタッチメントを付けた後の武器の値から計算する
+    modified = None
+    if any(col in COMPUTED for col in columns):
+        modified = [
+            {**weapon, **{col: applied(col, combo) for col in TTK_COLUMNS}}
+            for combo in combos
+        ]
+
     values = {}
     scores = {}
     for col, _, higher_is_better in stat_defs:
-        values[col] = [
-            apply_attachments(weapon[col], col, [attachments[s][i][col] for s, i in combo.items()])
-            for combo in combos
-        ]
+        if col in COMPUTED:
+            values[col] = [COMPUTED[col](w) for w in modified]
+        else:
+            values[col] = [applied(col, combo) for combo in combos]
         scores[col] = standard_scores(values[col], higher_is_better)
 
     averages = []
