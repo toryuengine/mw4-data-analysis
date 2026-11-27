@@ -23,7 +23,7 @@ DEFAULT_HP = 100
 def damage_stages(weapon):
     """[(距離上限, ダメージ), ...] を近い順に返す。上限が NULL の段階は ∞ にする。"""
     stages = []
-    for n in (1, 2, 3):
+    for n in (1, 2, 3, 4):
         damage = weapon.get(f"range{n}_damage")
         if damage is None:
             continue

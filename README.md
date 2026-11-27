@@ -8,17 +8,17 @@
 
 | テーブル | 内容 | 件数 |
 |---|---|---|
-| category | 武器カテゴリー | 1 |
-| weapon | 武器本体のステータス | 9 |
-| muzzle | アタッチメント：マズル | 8 |
-| barrel | アタッチメント：バレル | 6 |
-| laser | アタッチメント：レーザー | 7 |
+| category | 武器カテゴリー | 2 |
+| weapon | 武器本体のステータス | 10 |
+| muzzle | アタッチメント：マズル | 16 |
+| barrel | アタッチメント：バレル | 9 |
+| laser | アタッチメント：レーザー | 14 |
 | site | アタッチメント：サイト | 23 |
-| stock | アタッチメント：ストック | 4 |
-| underbarrel | アタッチメント：アンダーバレル | 8 |
-| ammo | アタッチメント：弾薬 | 5 |
-| rear_grip | アタッチメント：リアグリップ | 3 |
-| magazine | アタッチメント：マガジン | 2 |
+| stock | アタッチメント：ストック | 8 |
+| underbarrel | アタッチメント：アンダーバレル | 12 |
+| ammo | アタッチメント：弾薬 | 10 |
+| rear_grip | アタッチメント：リアグリップ | 6 |
+| magazine | アタッチメント：マガジン | 4 |
 
 ## 関連
 
@@ -27,7 +27,7 @@ erDiagram
     category ||--o{ weapon : "category_id"
 ```
 
-アタッチメントの各テーブルは `weapon_id` で武器に紐付く（今は全行 HAN 86）。
+アタッチメントの各テーブルは `weapon_id` で武器に紐付く（今は HAN 86 と VEL 46 の分。site は HAN 86 のみ）。
 
 ---
 
@@ -43,6 +43,7 @@ erDiagram
 | id | name |
 |---|---|
 | 1 | アサルト |
+| 2 | サブマシンガン |
 
 ---
 
@@ -172,7 +173,7 @@ erDiagram
 
 ### 距離別ダメージ
 
-最大 3 段階。使わない段階は NULL。最後の段階は `max` を NULL（＝∞）にする。
+最大 4 段階。使わない段階は NULL。最後の段階は `max` を NULL（＝∞）にする。
 
 | カラム | 型 | 内容 | 単位 |
 |---|---|---|---|
@@ -182,13 +183,16 @@ erDiagram
 | range2_damage | INT | 2 段階目のダメージ | |
 | range3_max | INT | 3 段階目の距離上限 | m |
 | range3_damage | INT | 3 段階目のダメージ | |
+| range4_max | INT | 4 段階目の距離上限 | m |
+| range4_damage | INT | 4 段階目のダメージ | |
 
 例：
 
-| 画面の表示 | range1_max | range1_damage | range2_max | range2_damage | range3_max | range3_damage |
-|---|---|---|---|---|---|---|
-| 0-30: 23 / 30-∞: 19 | 30 | 23 | NULL | 19 | NULL | NULL |
-| 0-21: 31 / 21-43: 25 / 43-∞: 22 | 21 | 31 | 43 | 25 | NULL | 22 |
+| 画面の表示 | range1_max | range1_damage | range2_max | range2_damage | range3_max | range3_damage | range4_max | range4_damage |
+|---|---|---|---|---|---|---|---|---|
+| 0-30: 23 / 30-∞: 19 | 30 | 23 | NULL | 19 | NULL | NULL | NULL | NULL |
+| 0-21: 31 / 21-43: 25 / 43-∞: 22 | 21 | 31 | 43 | 25 | NULL | 22 | NULL | NULL |
+| 0-10: 20 / 10-17: 17 / 17-24: 15 / 24-∞: 14 | 10 | 20 | 17 | 17 | 24 | 15 | NULL | 14 |
 
 ---
 
@@ -213,9 +217,41 @@ weapon と同じステータス列を持つ（`category_id` と `fire_mode` は�
 |---|---|---|
 | power / range / accuracy / mobility / handling | INT | バーの増減値（例：+7、-4） |
 | rpm / magazine_size / reserve_ammo | INT | 増減値 |
-| 上記以外（pre_fire_delay 〜 range3_damage） | DECIMAL(6,2) | 元の武器のステータスからの増減率（%） |
+| 上記以外（pre_fire_delay 〜 range4_damage） | DECIMAL(6,2) | 元の武器のステータスからの増減率（%） |
 
 列の名前と並び順は weapon と同じ。各列の意味は上の weapon の表を参照。
+
+---
+
+## incompatible.json
+
+武器ごとに「付けられないアタッチメント」と「一緒に付けられない組み合わせ」を書くファイル。ルートに置く。
+
+```json
+{
+  "10": {
+    "unavailable": {
+      "stock": [3],
+      "laser": [5, 6]
+    },
+    "incompatible": [
+      ["stock:1", "muzzle:2"],
+      ["underbarrel:4", "barrel:2"]
+    ]
+  }
+}
+```
+
+| 項目 | 内容 |
+|---|---|
+| `"10"` などのキー | 武器の id（weapon テーブルの id）。JSON のキーは文字列なので `"10"` と書く |
+| `unavailable` | その武器では付けられないアタッチメント。`{スロット名: [ident, ...]}` |
+| `incompatible` | 一緒に付けられない組み合わせの 2 次元配列。1 組は `["スロット名:ident", "スロット名:ident"]` |
+
+- スロット名はテーブル名：`muzzle` `barrel` `laser` `site` `stock` `underbarrel` `ammo` `rear_grip` `magazine`
+- 番号はアタッチメントテーブルの `ident`。`ident` は武器ごとの番号なので、同じ `"stock:1"` でも武器が違えば別のストックを指す
+- 制限がない武器は `"unavailable": {}`、`"incompatible": []` のままにする
+- JSON にはコメントを書けない
 
 ---
 
