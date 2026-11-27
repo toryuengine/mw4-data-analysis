@@ -9,33 +9,26 @@ import sys
 import unicodedata
 
 import mysql.connector
-from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 from standard_score import standard_scores_by_key  # noqa: E402
+from db import DB_CONFIG  # noqa: E402,F401  main3 / main4 もここから使う
+from stat_catalog import STAT_CATALOG, DEFAULT_SELECTED  # noqa: E402
+from stat_catalog import select_stats as _select_stats  # noqa: E402
 
-load_dotenv()
+# 偏差値を出す項目の番号（src/stat_catalog.py の STAT_CATALOG の番号）
+# 実行時に `python main2.py 1 2 3` のように番号を渡すと、こちらより優先される
+SELECTED = DEFAULT_SELECTED
 
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "database": os.getenv("DB_NAME"),
-}
 
-# 偏差値を出すステータス（カラム名, 表示名, 大きいほど良いか）
-# 時間（ミリ秒）は短いほど良いので False
-STATS = [
-    ("power",           "威力",     True),
-    ("range",           "射程",     True),
-    ("accuracy",        "命中率",   True),
-    ("mobility",        "機動性",   True),
-    ("handling",        "操作性",   True),
-    ("rpm",             "RPM",      True),
-    ("muzzle_velocity", "マズル",   True),
-    ("ads_in_time",     "ADS",      False),
-    ("reload_time",     "リロード", False),
-]
+def select_stats(numbers):
+    try:
+        return _select_stats(numbers)
+    except ValueError as e:
+        raise SystemExit(str(e))
+
+
+STATS = select_stats(SELECTED)
 
 
 def fetch_weapons():
@@ -82,7 +75,7 @@ def fmt(score):
 
 def print_table(weapons, scores, averages):
     name_w = max(width(w["name"]) for w in weapons) + 2
-    col_w = 9
+    col_w = max(9, max(width(label) for _, label, _ in STATS) + 2)
 
     header = pad("武器", name_w) + "".join(pad(label, col_w, right=True) for _, label, _ in STATS)
     header += pad("平均", col_w, right=True)
@@ -98,7 +91,24 @@ def print_table(weapons, scores, averages):
         print(line)
 
 
+def print_catalog():
+    print("番号  項目")
+    for n, (col, label, higher_is_better) in STAT_CATALOG.items():
+        direction = "大きいほど良い" if higher_is_better else "小さいほど良い"
+        print(f"{n:>4}  {pad(label, 14)}{pad(col, 22)}{direction}")
+
+
 if __name__ == "__main__":
+    args = sys.argv[1:]
+    if args == ["list"]:
+        print_catalog()
+        sys.exit()
+    if args:
+        try:
+            STATS = select_stats([int(a) for a in args])
+        except ValueError:
+            raise SystemExit("番号は整数で指定してください（例: python main2.py 1 2 3）")
+
     weapons = fetch_weapons()
     scores = calc_scores(weapons)
     averages = calc_average(weapons, scores)
