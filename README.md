@@ -245,6 +245,63 @@ CRONEN OSPREY       39.3     55.9     50.6     63.0     58.0     64.7     45.4  
 ...
 ```
 
+### main3.py
+
+DB の weapon テーブルから全武器のステータスを取り出し、`src/killtime.py` で距離ごとのキルタイムを計算して出力する。DB 接続と表の整形は `main2.py` の関数を使う。
+
+```
+.venv\Scripts\python.exe main3.py
+```
+
+- 出力は 3 つの表
+  - 撃ち始めからのキルタイム（ミリ秒）
+  - エイム開始からのキルタイム（`ads_in_time` を足した値）
+  - 距離ごとの「1発のダメージ x 必要な弾数」
+- キルタイムの表は、全距離の平均が短い順
+- 出す距離はファイル先頭の `DISTANCES`、敵の体力は `HP` で変えられる
+- `*` は 1 マガジンでは倒せない、`※` はオート射撃がない武器（rpm どおりに撃ち続ける前提なので、実際より速く出ることがある）
+
+出力例：
+
+```
+■ 撃ち始めから
+武器                   5m     10m     15m     20m     30m     40m     50m    平均
+---------------------------------------------------------------------------------
+PATRIOT XMR           287     295     303     310     326     342     357     317
+ODEN                  297     304     312     319     333     348     362     325
+...
+```
+
+### src/killtime.py
+
+キルタイム（TTK）を算出するファイル。撃ち始めてから、敵の HP を 0 にする弾が当たるまでの時間（ミリ秒）を計算する。
+
+```
+1発のダメージ   = 距離 d が入る段階の rangeN_damage
+必要な弾数(STK) = ceil(HP ÷ 1発のダメージ)
+発射間隔        = 60000 ÷ rpm
+キルタイム      = pre_fire_delay + (STK - 1) × 発射間隔 + d ÷ muzzle_velocity × 1000
+```
+
+- 全弾が胴体に当たる前提（距離別ダメージだけを使い、部位別ダメージは使わない）
+- 弾の飛ぶ時間は最後の 1 発の分だけ足す（全弾同じ速さで飛ぶため）
+- 距離の境目は次の段階に入れる（`0-30 / 30-∞` なら、30m は 2 段階目）
+- rpm どおりに撃ち続ける前提。バースト武器の間隔の違いは考えない
+- 武器の一覧やDB接続は持たない。weapon テーブルの 1 行を辞書で渡す
+
+| 関数 | 内容 |
+|---|---|
+| `damage_at(weapon, distance)` | 距離 distance(m) での 1 発のダメージ |
+| `shots_to_kill(damage, hp=100)` | 倒すのに必要な弾数 |
+| `kill_time(weapon, distance, hp=100, include_ads=False)` | `{damage, stk, ttk, enough_ammo}` を返す。`ttk` がキルタイム(ms)。`include_ads=True` で ADS 込み |
+
+```python
+from killtime import kill_time
+
+kill_time(weapon, 10)                     # {'damage': 23, 'stk': 5, 'ttk': 340.1, 'enough_ammo': True}
+kill_time(weapon, 10, include_ads=True)   # ttk に ads_in_time を足した値
+```
+
 ### src/standard_score.py
 
 偏差値（standard score）を算出するファイル。渡された数値の集まりの中で、各値を「平均 50・標準偏差 10」の尺度に直す。
