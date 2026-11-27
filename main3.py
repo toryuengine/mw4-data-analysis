@@ -13,10 +13,13 @@ DISTANCES = [5, 10, 15, 20, 30, 40, 50]
 HP = DEFAULT_HP
 
 
-def calc_table(weapons, include_ads):
+def calc_table(weapons, include_ads=False, include_sprint=False):
     """{武器名: [各距離の計算結果, ...]} を返す。"""
     return {
-        w["name"]: [kill_time(w, d, hp=HP, include_ads=include_ads) for d in DISTANCES]
+        w["name"]: [
+            kill_time(w, d, hp=HP, include_ads=include_ads, include_sprint=include_sprint)
+            for d in DISTANCES
+        ]
         for w in weapons
     }
 
@@ -70,13 +73,15 @@ def print_stk(weapons, table):
 
 if __name__ == "__main__":
     weapons = fetch_weapons()
-    pure = calc_table(weapons, include_ads=False)
+    pure = calc_table(weapons)
     with_ads = calc_table(weapons, include_ads=True)
+    with_sprint = calc_table(weapons, include_sprint=True)
 
     print(f"キルタイム（ミリ秒・HP {HP}・全弾胴体・短い順）")
     print()
     print_table("■ 撃ち始めから", weapons, pure)
     print_table("■ エイム開始から（ADS 込み）", weapons, with_ads)
+    print_table("■ ダッシュ後から（ダッシュ硬直込み・腰だめ）", weapons, with_sprint)
     print_stk(weapons, pure)
     print("* … 1マガジンでは倒せない")
     print("※ … オート射撃がない武器。rpm どおりに撃ち続ける前提なので、実際より速く出ることがある")

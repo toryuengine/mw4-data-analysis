@@ -253,9 +253,10 @@ DB の weapon テーブルから全武器のステータスを取り出し、`sr
 .venv\Scripts\python.exe main3.py
 ```
 
-- 出力は 3 つの表
+- 出力は 4 つの表
   - 撃ち始めからのキルタイム（ミリ秒）
   - エイム開始からのキルタイム（`ads_in_time` を足した値）
+  - ダッシュ後からのキルタイム（`sprint_to_fire`＝ダッシュ硬直を足した値。腰だめ撃ちの前提）
   - 距離ごとの「1発のダメージ x 必要な弾数」
 - キルタイムの表は、全距離の平均が短い順
 - 出す距離はファイル先頭の `DISTANCES`、敵の体力は `HP` で変えられる
@@ -293,14 +294,17 @@ ODEN                  297     304     312     319     333     348     362     32
 |---|---|
 | `damage_at(weapon, distance)` | 距離 distance(m) での 1 発のダメージ |
 | `shots_to_kill(damage, hp=100)` | 倒すのに必要な弾数 |
-| `kill_time(weapon, distance, hp=100, include_ads=False)` | `{damage, stk, ttk, enough_ammo}` を返す。`ttk` がキルタイム(ms)。`include_ads=True` で ADS 込み |
+| `kill_time(weapon, distance, hp=100, include_ads=False, include_sprint=False)` | `{damage, stk, ttk, enough_ammo}` を返す。`ttk` がキルタイム(ms)。`include_ads=True` で ADS 込み、`include_sprint=True` でダッシュ硬直（`sprint_to_fire`）込み |
 
 ```python
 from killtime import kill_time
 
-kill_time(weapon, 10)                     # {'damage': 23, 'stk': 5, 'ttk': 340.1, 'enough_ammo': True}
-kill_time(weapon, 10, include_ads=True)   # ttk に ads_in_time を足した値
+kill_time(weapon, 10)                        # {'damage': 23, 'stk': 5, 'ttk': 340.1, 'enough_ammo': True}
+kill_time(weapon, 10, include_ads=True)      # ttk に ads_in_time を足した値
+kill_time(weapon, 10, include_sprint=True)   # ttk に sprint_to_fire を足した値
 ```
+
+両方を True にすると単純に足し算する。ゲーム内でダッシュ硬直とエイム開始が同時に進むかは未確認。
 
 ### src/standard_score.py
 

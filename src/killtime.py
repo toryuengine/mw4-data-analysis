@@ -60,13 +60,16 @@ def travel_time(weapon, distance):
     return distance / float(weapon["muzzle_velocity"]) * 1000
 
 
-def kill_time(weapon, distance, hp=DEFAULT_HP, include_ads=False):
+def kill_time(weapon, distance, hp=DEFAULT_HP, include_ads=False, include_sprint=False):
     """キルタイムの計算結果を辞書で返す。
+
+    include_ads    : True なら ads_in_time（エイム開始速度）を足す
+    include_sprint : True なら sprint_to_fire（ダッシュ後射撃速度＝ダッシュ硬直）を足す
 
     戻り値:
         damage        : 1発のダメージ
         stk           : 必要な弾数
-        ttk           : キルタイム(ms)。include_ads=True なら ads_in_time を足した値
+        ttk           : キルタイム(ms)
         enough_ammo   : 1マガジンで倒せるか（stk <= magazine_size）
     """
     damage = damage_at(weapon, distance)
@@ -77,6 +80,8 @@ def kill_time(weapon, distance, hp=DEFAULT_HP, include_ads=False):
     ttk += travel_time(weapon, distance)
     if include_ads:
         ttk += float(weapon.get("ads_in_time") or 0)
+    if include_sprint:
+        ttk += float(weapon.get("sprint_to_fire") or 0)
 
     magazine = weapon.get("magazine_size")
     return {
@@ -91,7 +96,7 @@ if __name__ == "__main__":
     # 動作確認用のサンプル（HAN 86 の値。武器の一覧ではない）
     sample = {
         "name": "sample", "rpm": 741, "muzzle_velocity": 615.0, "pre_fire_delay": 0,
-        "ads_in_time": 250, "magazine_size": 30,
+        "ads_in_time": 250, "sprint_to_fire": 210, "magazine_size": 30,
         "range1_max": 32, "range1_damage": 23,
         "range2_max": None, "range2_damage": 19,
         "range3_max": None, "range3_damage": None,
@@ -99,4 +104,6 @@ if __name__ == "__main__":
     for d in (10, 31, 32, 50):
         r = kill_time(sample, d)
         ads = kill_time(sample, d, include_ads=True)
-        print(f"{d}m: {r['damage']}dmg x {r['stk']}発  TTK {r['ttk']:.1f}ms  ADS込み {ads['ttk']:.1f}ms")
+        sprint = kill_time(sample, d, include_sprint=True)
+        print(f"{d}m: {r['damage']}dmg x {r['stk']}発  TTK {r['ttk']:.1f}ms  "
+              f"ADS込み {ads['ttk']:.1f}ms  ダッシュ硬直込み {sprint['ttk']:.1f}ms")
