@@ -397,6 +397,15 @@ incompatible.json: 付けられない 0 件 / 組み合わせ不可 0 組
       威力 30(68)  射程 43(58)  命中率 32(29)  機動性 76(65)  操作性 87(76)  RPM 952(50)  マズル 678(60)  ADS 193(73)  リロード 1896(67)
 ```
 
+### main7.py
+
+VEL 46（id 10）を総当たりして、ADS（21）・腰水平キック（35）・腰垂直キック（36）の偏差値の平均が高いカスタムを上位 20 件出力する。武器と項目はファイル先頭の `WEAPON_ID`・`STATS` に固定。計算は `rank_customs()`、表示は main5.py の `print_result()` を使う。
+
+```
+.venv\Scripts\python.exe main7.py        # 5 個まで
+.venv\Scripts\python.exe main7.py 3      # 3 個まで
+```
+
 ### src/custom_score.py
 
 アタッチメントの総当たり → 付けた後のステータス計算 → 偏差値 → 上位の取り出しまでを、関数 1 つで行う。
